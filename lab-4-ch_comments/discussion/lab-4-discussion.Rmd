@@ -1,0 +1,340 @@
+---
+title: "Lab Discussion 4 - Criminal Justice Lab"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+<br>
+<hr>
+<br>
+
+# Overview
+
+## Goals
+
+Our discussion section is a time for you to 1) ask unresolved questions from lab, 2) go over variants of the exercises we encouraged you to try during lab, and 3) answer any clarifying questions related to the problem set
+
+<br>
+
+# General Questions
+
+Before we get started I wanted to set a little bit of time aside for you all to ask any questions you may have after the last lab.
+
+# Lab 4 Exercises
+
+## 1. Installing Packages and Bringing in Data 
+
+
+```{r}
+#install.packages("tidyverse")
+library(lubridate)
+library(readxl)
+library(stringr)
+library(tidyverse) #metapackage of all tidyverse packages
+library(collapse)
+require(doBy)
+library(visreg)
+library(tidyverse) #metapackage of all tidyverse packages
+library(crosswalkr) #this is going to help us read in data from a series of years
+library(zoo)
+library(randomForest) #for prediction analysis!
+
+```
+
+
+```{r}
+#Bringing in our data
+d2013 <- read.csv('./input/Police_Response_to_Resistance_-_2013.csv')
+d2014 <- read.csv('./input/Police__2014_Response_to_Resistance.csv')
+d2015 <- read.csv('./input/Police__2015_Response_to_Resistance.csv')
+d2016 <- read.csv('./input/Police_Response_to_Resistance_-_2016.csv')
+d2017 <- read.csv('./input/Police_Response_to_Resistance___2017.csv')
+d2018 <- read.csv('./input/Police_Response_to_Resistance_-_2018.csv')
+d2019 <- read.csv('./input/Police_Response_to_Resistance___2019.csv')
+
+#load a crosswalk to match up different years into a single table
+cw <- read.csv('./input/Crosswalk.csv')
+
+df2013 <- renamefrom(d2013, cw, c2013, VarName)
+df2014 <- renamefrom(d2014, cw, c2014, VarName)
+df2015 <- renamefrom(d2015, cw, c2015, VarName)
+df2016 <- renamefrom(d2016, cw, c2016, VarName)
+df2017 <- renamefrom(d2017, cw, c2017, VarName)
+df2018 <- renamefrom(d2018, cw, c2018, VarName)
+df2019 <- renamefrom(d2019, cw, c2019, VarName)
+
+#rbind() stacks the datasets together so that we have one dataset where each row is a different day/police response.
+df <- rbind(df2013, df2014, df2015, df2016, df2017, df2018, df2019) 
+
+```
+
+```{r}
+#Alternative Method 1 - reduces lines of code by 1 but uses our dplyr syntax
+#df <- rbind(d2013 %>% tbl_df() %>% renamefrom(., cw, c2013, VarName),
+
+ #           d2014 %>% tbl_df() %>% renamefrom(., cw, c2014, VarName),
+
+  #          d2015 %>% tbl_df() %>%vrenamefrom(., cw, c2015, VarName),
+
+   #         d2016 %>% tbl_df() %>%vrenamefrom(., cw, c2016, VarName),
+
+    #        d2017 %>% tbl_df() %>%vrenamefrom(., cw, c2017, VarName),
+
+     #       d2018 %>% tbl_df() %>%vrenamefrom(., cw, c2018, VarName),
+
+      #      d2019 %>% tbl_df() %>%vrenamefrom(., cw, c2019, VarName))
+
+
+#Alternative Method 2 - bring in all files, you could then loop through these with the code in Alternative Method 1
+dataFiles <- lapply(Sys.glob("./input/Police*.csv"), read.csv)
+
+
+```
+
+
+## 2. Cleaning up the dataset
+
+```{r}
+#Recoding values
+df <- df %>%
+  mutate(CIT_INJURE = case_when(
+    CIT_INJURE %in% c("No", "false") ~ 0,
+    CIT_INJURE %in% c("Yes", "true") ~ 1))
+
+df <- df %>%
+ filter_at(vars(DIVISION, CitSex, CitRace, CitSex, CitRace), #these variables
+           all_vars(!. %in% c("", "O/T", "Null", "Unknown"))) #all do not have values in set defined by c()
+
+
+#Creating new gender variable
+df$cit_female <- ifelse(df$CitSex == "Female", 1, 0)
+df$off_female <- ifelse(df$OffSex == "Female", 1, 0)
+
+#Creating new race variable (indicator for black, white, Hispanic, by construction the ommitted group will be all other races)
+df$cit_black <- ifelse(df$CitRace == "Black", 1, 0)
+df$cit_white <- ifelse(df$CitRace == "White", 1, 0)
+df$cit_hispanic <- ifelse(df$CitRace == "Hispanic", 1, 0)
+
+df$off_black <- ifelse(df$OffRace == "Black", 1, 0)
+df$off_white <- ifelse(df$OffRace == "White", 1, 0)
+df$off_hispanic <- ifelse(df$OffRace == "Hispanic", 1, 0)
+ 
+#Creating indicators for whether race/gender are the same between citizens and officers
+df$co_race_b <- df$cit_black == df$off_black 
+df$co_race_w <- df$cit_white == df$off_white 
+df$co_race_h <- df$cit_hispanic == df$off_hispanic 
+df$co_gen_f <- df$cit_female == df$off_female
+df <- df %>% mutate_at(vars(starts_with("co_")), as.numeric)
+
+#Turning division into an integer
+df$DIVISION_INT <- recode(df$DIVISION, "CENTRAL" = "1", "NORTH CENTRAL" = "2", "NORTHEAST" = "3", "NORTHWEST" = "4", "SOUTH CENTRAL" = "5", "SOUTHEAST" = "6", "SOUTHWEST" = "7", default = NA_character_)
+df$DIVISION_INT <- as.numeric(df$DIVISION_INT)
+
+```
+
+```{r}
+# Now, we'll create a YEAR and a YEAR/MONTH variable by manipulating the OCCURED_D variable
+df$day <- substring(df$OCCURRED_D, 4, 5)
+
+df$year <- substring(df$OCCURRED_D, 7, 10) #substring() takes the 7th to 10th characters from OCCURRED_D and places them into a new year variable
+df$year <- as.numeric(df$year) #this ensures the new variable is coded as a number
+
+df$month <- substring(df$OCCURRED_D, 1, 2) 
+df$month <- as.numeric(df$month)
+
+df$year_month <- as.yearmon(paste(df$year, df$month), "%Y %m") #creating a time variable that is equal to the month/year of the observation
+
+df <- df %>%
+  mutate(date = make_date(year, month, day))
+
+```
+
+
+## 3. Examining trends over time
+
+```{r}
+#Plotting citizen injuries by day 
+ggplot(df, aes(x = date, y= CIT_INJURE, group = date)) +
+  geom_point() +
+  labs(x = "Day", y = "Count", title = "Injuries by Day")
+
+```
+
+```{r}
+#Plotting citizen injuries by day 
+df_day <- df %>%
+  group_by(date, CIT_INJURE) %>%
+  summarise(n = n())  %>%
+  mutate(prop = n / sum(n)) %>%
+  na.omit() %>%
+  filter(CIT_INJURE == 1)
+
+ggplot(df_day, aes(x = date, y= prop, group = date)) +
+  geom_point() +
+  labs(x = "Month/Year", y = "Count", title = "Injuries by Day")
+
+```
+
+```{r}
+#Plotting citizen injuries by month/year 
+df_ym <- df %>%
+  group_by(year_month, CIT_INJURE) %>%
+  summarise(n = n())  %>%
+  mutate(prop = n / sum(n)) %>%
+  na.omit() %>%
+  filter(CIT_INJURE == 1)
+
+ggplot(df_ym, aes(x = year_month, y= prop, group = year_month)) +
+  geom_point() +
+  labs(x = "Month/Year", y = "Proportion", title = "Injuries by Month/Year")
+
+```
+
+## 4. Creating smaller datasets (cleaning steps removed - used group_by and created an indicator for the policy)
+
+```{r}
+#Year - Month Dataset
+df_ym <- read.csv("C:/Users/kcs3a/Desktop/year_month.csv")
+
+df_ym$year_month <- as.yearmon(paste(df_ym$year, df_ym$month), "%Y %m") #creating a time variable that is equal to the month/year of the observation
+
+```
+
+
+```{r}
+#Same plot as in the last part of 3
+ggplot(df_ym, aes(x = year_month, y= cit_injure, group = year_month)) +
+  geom_point() +
+  labs(x = "Month/Year", y = "Proportion", title = "Injuries by Month/Year")
+
+```
+
+
+
+```{r}
+#Year - Month Dataset by Citizen Female
+df_ymf <- read.csv("C:/Users/kcs3a/Desktop/df_female.csv")
+
+df_ymf$year_month <- as.yearmon(paste(df_ymf$year, df_ymf$month), "%Y %m") #creating a time variable that is equal to the month/year of the observation
+
+```
+
+```{r}
+ggplot(df_ymf, aes(x = year_month, y= cit_injure, color = factor(cit_female))) +
+  geom_point() +
+  labs(x = "Month/Year", y = "Proportion", title = "Injuries by Month/Year")
+
+```
+
+## 5. Ttests
+
+```{r}
+#Ttest on our initial dataset
+df$policy <- (df$year > 2014 & df$month>=8) |  (df$year>2014)
+
+aggregate(df$CIT_INJURE, list(df$policy), mean)
+
+```
+
+```{r}
+pairwise.t.test(df$CIT_INJURE, df$policy,
+                 p.adjust.method = "BH")
+```
+
+
+```{r}
+#Ttest for our year-month dataset
+aggregate(df_ym$cit_injure, list(df_ym$policy), mean)
+
+```
+
+```{r}
+pairwise.t.test(df_ym$cit_injure, df_ym$policy,
+                 p.adjust.method = "BH")
+
+```
+
+
+```{r}
+#Ttest for our year-month by female dataset
+aggregate(df_ymf$cit_injure, list(df_ymf$policy), mean)
+
+```
+
+```{r}
+pairwise.t.test(df_ymf$cit_injure, df_ymf$cit_female,
+                 p.adjust.method = "BH")
+```
+
+```{r}
+#What about additional break downs?
+aggregate(df_ymf$cit_injure, list(df_ymf$cit_female), mean)
+
+```
+
+```{r}
+pairwise.t.test(df_ymf$cit_injure, df_ymf$cit_female,
+                 p.adjust.method = "BH")
+```
+
+## 6. Linear Regression
+
+```{r}
+#Linear regression on our initial dataset
+policy <- lm(CIT_INJURE ~ policy, data=df)
+summary(policy)
+visreg(policy, "policy", type="contrast")
+```
+
+```{r}
+#Linear regression on our year-month dataset
+policy_ym <- lm(cit_injure ~ policy, data=df_ym)
+summary(policy_ym)
+visreg(policy_ym, "policy", type="contrast")
+
+```
+
+```{r}
+#Linear regression on our year-month by female dataset
+policy_ymf <- lm(cit_injure ~ policy, data=df_ymf)
+summary(policy_ymf)
+visreg(policy_ymf, "policy", type="contrast")
+
+```
+
+But why are there differences in our estimates when we aggregate our data differently? This is due to differences in covariation between our independent and dependent variables. Essentially each of our variables has a certain amount of variation (see the graphs above that show all of the variation with our variables of interest over time). The variation between certain variables can be correlated (these correlations can be weak or strong). Depending on the way we aggregate our data, we are providing different number of obervations and are thereby reducing our sample size and changing the way we are measuring our variables. This then creates different covariations.
+
+The biggest take away is make sure that your data makes sense for the questions you want to answer! In the case of crime, we don't really expect a lot to change day to day. The literature tells us there are seasonal changes, so we want to aggregate up to the month. This is also true for different topics like unemployment claims. Think about what your outcome is and how you want to talk about it. 
+
+## 7. Adding Controls 
+
+```{r}
+#Additional Linear Regressions on our Year by Month Dataset
+female <- lm(cit_injure ~ cit_female, data=df_ym)
+print(female)
+
+visreg(female, "cit_female", type="contrast")
+
+```
+
+```{r}
+female_y <- lm(cit_injure ~ cit_female + year, data=df_ym)
+print(female_y)
+
+visreg(female_y, "cit_female", type="contrast")
+visreg(female_y, "year", type="contrast")
+
+```
+
+
+```{r}
+female_yc <- lm(cit_injure ~ cit_female + co_gen_f + year, data=df_ym)
+print(female_yc)
+
+```
+
+# Problem Set Questions 
+
+I want to leave a little bit of time to walk through the problem set exercises at a high level. 

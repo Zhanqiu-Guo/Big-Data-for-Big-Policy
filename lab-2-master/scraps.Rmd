@@ -1,0 +1,52 @@
+---
+title: "Untitled"
+author: "Big Data for Big Policy Problems"
+date: "6/22/2020"
+output: html_document
+---
+# Part A: Using base R functions to look at the data
+
+## Subset a specific column
+
+The `$` for each row in the `glimpse()` output is a reference to R's subset syntax for pulling a single column of a data frame as a vector. If we evaluate `scraped$some_var`, R will return all values in the data frame to console (even if there are far more than we can humanly look at).
+
+```{r, R.options = list(max.print=10)}
+#this will print every rows' value, so it is purposefully limited here
+scraped$listing_date
+```
+
+## Look at unique values
+
+Accordingly, we may prefer to use the `unique()` function on this subsetted column to look at the _unique_ days that listings were collected on in this dataset, which tames this output to a manageable level when we have many rows of data.
+
+```{r}
+unique(scraped$listing_date)
+```
+
+These values are not sorted at all, but we can achieve this using the `sort()` function on the expression `unique(scraped$listing_date)` that we just evaluated.
+
+```{r}
+sort(unique(scraped$listing_date))
+```
+
+We can then count the number of unique values by nesting the `unique(scraped$listing_date)` expression within the `length()` function that calculates the length of a vector. 
+
+```{r}
+length(unique(scraped$listing_date))
+```
+
+We can see based on this output that we have about 4 months of data within this table of listings.
+
+## Tabulating values
+
+One final base R function that can be useful for learning data analysis is the `table()` function. This function counts the occurrences of each level of a variable in our data. `table()` is most useful for counting occurrences when we don't have _too_ many levels. 
+
+Note how we must tell R to print `NA`, or missing values, for this tabulation. If we omit this second term, we won't know how many of our rows are missing data.
+
+```{r}
+table(scraped$scraped_beds, useNA = "always")
+```
+
+<br>
+<hr>
+<br>

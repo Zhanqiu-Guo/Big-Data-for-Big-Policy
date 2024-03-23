@@ -1,0 +1,128 @@
+---
+title: "Lab Discussion 1 - Getting Moving (To Opportunity)"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+<br>
+<hr>
+<br>
+
+# Overview
+
+## Goals
+
+Our discussion section is a time for you to 1) ask unresolved questions from lab, 2) go over variants of the exercises we encouraged you to try during lab, and 3) answer any clarifying questions related to the problem set
+
+<br>
+
+# General Questions
+
+Before we get started I wanted to set a little bit of time aside for you all to ask any questions you may have after the first lab:  
+
+  *Questions about how to set up R or R Studio?  
+  *Questions about R Markdown, functions, or arguments?  
+  *Anything else?
+  
+Okay, if we're clear on all of that we're going to get moving on to some exercises. 
+
+# Lab 1 Exercises
+
+The data for our discussion is called discussion.xlsx. It is the same dataset as cty_covariates.csv we used in class, except now it is saved as a .xlsx AND it has a few new data issues for us to explore. You can still use the dictionary provided in our GitHub repository to answer these questions.
+
+After looking at all of the variables in our dataset, we've developed a hypothesis that average household income is likely associated with a lot of different variables. Maybe counties with households with higher incomes have smaller shares of single parents, higher shares of adults with college degrees, and higher job density. But can we estimate a relationship with multiple variables?
+
+## Bringing in data 
+
+1. Installing Packages 
+
+```{r}
+#install.packages("tidyverse")
+library(tidyverse) #metapackage of all tidyverse packages
+library(stringr)
+library(readxl)
+```
+
+2. Bringing in our dataset & practice merging 
+```{r}
+setwd("C:/Users/Zhanqiu/Desktop/Cornell/lab-1-master")
+df <- read_excel("discussion.xlsx")
+df2 <- read.csv("county_outcomes.csv")
+```
+
+3. Subsetting our dataset to just the variables we care about
+
+```{r}
+merged <- merge(df, df2, all=TRUE)
+
+df <- df %>% rename(county=countrryidd)
+merged2 <- merge(df, df2, all=TRUE)
+```
+```{r}
+merged_subset <- subset(merged2, select=C)
+```
+
+4. Viewing our variables. Any variables stored incorrectly?
+
+```{r}
+
+```
+
+5. Let's clean out special characters
+
+```{r}
+merged_subset%hhinc_mean2000v2 <- as.numerical(str_match(merged_subset%hhinc_mean2000v2,"[0-9]+"))
+```
+
+
+6. Now let's rename our rows with the commuter zone name (is that possible?)
+
+```{r}
+merged_subset$st_county <- paste(merged_subset$st_state,"_",merged_subset$st_county)
+ronames(merged_subset) <- 
+```
+
+## Summary Statistics 
+
+1. Let's compare the medians for these different variables.
+
+```{r}
+merged_subset$hhinc_mean2000 <- median(merged_subset$hhinc_mean2000,na.rm=TRUE)
+```
+
+2. Can we run a correlation test with more than 2 variables?
+
+```{r}
+cor.test(merged_subset$hhinc_mean2000,merged_subset$singleparent_share2000,method="pearson")
+```
+```{r}
+cor_1a <- round(cor(merged_subset[5:8]),2)
+cor_1b <- round(cor(merged_subset[5:8],use="complete"),2)
+```
+
+3. Maybe the correlation is stronger or weaker if we limit our sample to a certain group of people. For instance, how does the correlation between average household income and fraction in college differ if we run this correlation twice for those above the median for fraction with a college degree and those below the median.
+
+```{r}
+belowinc <- subset(merged_subset,hhinc_mean2000v2 < median(merged_subset$hhinc_2000v2,na.rm=TRUE))
+
+aboveinc <- subset(merged_subset,hhinc_mean2000v2 > median(merged_subset$hhinc_2000v2,na.rm=TRUE))
+```
+```{r}
+cor.test(belowinc$frac_coll_plus2000, belowinc$singleparent_share2000,method="pearson")
+
+cor.test(aboveinc$frac_coll_plus2000, aboveinc$singleparent_share2000,method="pearson")
+```
+
+
+# Problem Set Questions 
+
+I want to leave a little bit of time to walk through the problem set exercises at a high level. 
+
+Part A is designed to follow the exercises from the lab and this discussion. There is not really anything new here. 
+
+Part B is designed to stretch you. The problems here can all be done using the functions you've learned in class, but you might have to get a little bit creative in terms of how to use them. This section is going to require you to really understand the dataset you are working with. What do the variables mean? How can you change them or create new ones to answer the questions you're interested in? 
+
+Part C is our way of helping you do some high level thinking to prepare you for the policy brief we're going to ask you to write at the end of this course. Try to think about your data and what it is (or isn't) telling you. 
+

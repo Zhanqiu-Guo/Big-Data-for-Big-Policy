@@ -1,0 +1,111 @@
+---
+title: "Bonus Material for Lab 2"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+<br>
+<hr>
+<br>
+
+# Overview
+
+The notebook for lab 2 focuses heavily on using `dplyr` to do data manipulations. As we mentioned, however, this is not the only way to data analysis in R. In fact, all of these tasks can be accomplished without using external software libraries like `dplyr` if we use base R functionality appropriately. Part of this bonus material accordingly tries to give a primer in how we can do similar operations _outside_ of the `dplyr` context. You will _not_ be expected to use such approaches in your homework, but this material may be useful if you want to go further in learning R and may give you an appreciation for how `dplyr` streamlines tasks into a consistent set of functions/verbs.
+
+The other component to this bonus material is a set of examples that review what else we are loading when we use `library(tidyverse)`. Using the `tidyverse` library for our data analyses gives us more than just `dplyr` and `ggplot`, so we will use this space to give a bit more background on what exactly we gain beyond our familiar toolkit of data manipulation verbs and plotting functions.
+
+### Setup
+
+```{r, warning = FALSE, message = FALSE, results = FALSE}
+library(tidyverse) #we will use dplyr, readr and other libraries from this metalibrary
+library(sf)        #this is what will make R into a Geographic Information System (GIS)
+library(lubridate) #this will give us functions to work with dates more easily
+
+load("./input/ithaca_rentals.RData")
+```
+
+<br>
+<hr>
+<br>
+
+# Base R equivalents
+
+## `filter()`
+
+If we want to filter values with base R code, we need to use the `[]` function for indexing particular rows. Here is an example where we filter rows that are not `NA` for `scraped_rent` as in the prior example.
+
+`[]` takes two arguments, an `i` for row and `j` for column. If we don't specify anything for `i` or `j`, it assumes we want all rows or all columns (based on which argument isn't passed).
+
+Here we use the vector of `TRUE` values for `!is.na()` to tell R which rows to return, and we omit anything for the `j` argument and return all columns already present in scraped.
+
+```{r, results='hide'}
+scraped[!is.na(scraped$scraped_rent),]
+```
+
+This syntax certainly works, but it can lead to lengthy code if we want to filter on multiple conditions (a common task). It can also quickly become hard based on how horizontal a line gets to be. Needing to scroll left and right to make sense of a line is not ideal!
+
+<br>
+<hr>
+<br>
+
+## `select()`
+
+If we want to select subsets of columns with base R, we again come back to the `[]` index operator but focus on the `j` argument rather than the `i`. 
+
+```{r, results='hide'}
+#grab 2BR unit rows, grab listing_date column only, return as data frame
+#NB: columns are named for the j argument.
+scraped[scraped$scraped_beds == "2BR", "listing_date"]
+
+#grab 2BR unit rows, grab listing_date column only, return as vector
+#NB: we take the vector of interest first, then we subset rows. 
+#    This produces output similar to pull()
+scraped$listing_date[scraped$scraped_beds == "2BR"]
+
+#to grab multiple columns, we will define a set of column names we're interested in
+#here we will return all rows by not assigning an expression to i argument
+var_set <- c("listing_date", "listing_title", "scraped_rent", "scraped_beds")
+
+#by passing the vector of column names to the j argument, R will return df with just these
+subset_df <- scraped[, var_set]
+```
+
+<br>
+<hr>
+<br>
+
+## `mutate()`
+
+<br>
+<hr>
+<br>
+
+## `summarize()`
+
+<br>
+<hr>
+<br>
+
+## `group_by()`
+
+<br>
+<hr>
+<br>
+
+## `arrange()`
+
+<br>
+<hr>
+<br>
+
+# The _other_ `tidyverse` libraries
+
+## `tibble` 
+## `tidyr`
+## `readr` 
+## `stringr` 
+## `forcats`
+
+

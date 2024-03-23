@@ -1,0 +1,311 @@
+---
+title: "Lab Tutorial 1 - Getting Moving (To Opportunity)"
+output:
+  github_document:
+    toc: true
+    toc_depth: 2
+---
+
+<br>
+<hr>
+<br>
+
+# Overview
+
+## Goals
+
+In this lab tutorial, we will focus on learning the fundamentals of R using a subset of the "Moving to Opportunities" datset from the Opportunity Insights lab. We'll go over:
+
+1. Language basics to help you speak like a programmer  
+2. Dataset basics: what is a dataset? how do I use one in R?  
+`read.csv()`  
+3. How to view and summarize your data using functions such as:  
+`head()`  
+`tail()`  
+`mean()`  
+`table()`  
+`cor.test()`  
+4. How to merge datasets  
+`merge()`
+
+## Data
+
+The data for this lab come from Opportunity Insights. We will use two datasets. The first contains demographic information (e.g., household income, commute time, fraction earning college degree, etc.) by county, while the second contains outcomes (e.g., job growth, income percentile, married, etc.) by county.
+
+# Part A: Fundamentals of R and R notebooks
+
+Here are some basics before we get started:
+
+## RStudio
+
+1. Create a new RMarkdown notebook and give it an appropriate name like "Lab 1"
+2. If you want to write text, you just start typing. When you type text like this, R interprets it as Markdown. Markdown is a simple language that allows you to create headers, annotate text, and generate lists with simple syntax. You can read more on markdown [here](https://www.markdownguide.org/cheat-sheet/).
+3. If you want to add a code chunk, use the Insert button in the menu bar above and click "Insert" and then "R" (or click Ctrl-Alt-I). You will see that a section marked off by apostrophes is added, which tells R that this is code to evaluate.
+
+## Your first functions
+
+The first set of code below uses four functions, `intall.packages()`, `library()`, `list.files()` and `ls()`:
+
+        a. Functions are your way of telling R what to do. For instance, `library()` tells R to load whatever software package you place inside the parantheses. The area inside the () is populated with one or more arguments. 
+        b. Programming functions are based on an input/output idea. We provide a function with some input using _argument(s)_, and it provides us with some output.
+        b. Arguments are your way of telling the function exactly what you want to do. So for `library()`, the argument is the package you want installed. But functions are a general programming concept, so in other contexts you could want to tell R to summarize a variable. In that case you would say something like `sum(variable1)`. This tells R to compute the sum of all values in variable 1.
+
+```{r}
+#Installing and loading packages should always be the first code in your notebook
+#NOTE: the # allows you to add comments into your code without affecting the ability to run
+#To run a section of code, press ctrl-enter or the blue arrow to the right of the code block
+
+#install.packages("tidyverse")
+library(tidyverse) #metapackage of all tidyverse packages
+list.files(path = "../input") #this will list all files under the input directory
+ls() #this will list all objects in our environment
+```
+
+
+<br>
+
+# Part B: Reading in Data
+
+In this section we will go over three examples of ways you can bring in and store data using vectors, matrices, and data frames. These are not the only ways you can store data (you can also create factors and arrays), but these will be the three most important for this class.
+
+## Example 1. Create a vector
+
+We can create a vector, which is a combination of multiple values. This is the most basic _data structure_ in R. A vector could contain a series of numbers (1, 2, 3) or strings ('hello', 'how are you', 'hi').
+
+To create an object, which in this case will be a vector, we need to use the assignment operator `<-` (which is just the less than sign plus a minus). We assign values to some object, and then R stores it in memory for use later. Place whatever values you want the object to take on the right side of the arrow and the name of the object you’re creating on the left e.g., `price <- 20`. 
+
+You can think of a vector as a single variable. So matrices and dataframes, which we will see next, are basically a data structure where we combine a number of _equal length_ vectors together. 
+
+```{r}
+#Creating a vector storing values 1 to 10
+vector <- 1:10 # returns a vector with the integer sequence from 1 to 10 and assigns this object to vector
+print(vector) # look at the object using print() function
+class(vector) # check the class using class() function
+```
+
+## Example 2. Creating a matrix using vector as an input
+
+Like we stated above matrices are basically a set of equal length vectors. These are helpful for a variety of reasons, and resemble a spreadsheet, something you may already be familiar with. 
+
+One example of when we might want to use a matrix is if we do a cross-tabulation. For instance, maybe we want to know how many females/males are poor/not poor. We could create a 2x2 matrix that would tell us: column 1, row 1, the number of females that are poor; column 2, row 1, the number of females that are not poor; column 1, row 2, the number of males that are poor; column 2, row 2, the number of males that are not poor. We refer to this as a 2x2 matrix because it has 2 rows and 2 columns (i.e., rows X columns).
+
+```{r}
+#Creating a matrix from our vector above
+my.matrix <- matrix(vector, nrow = 5) #creates a matrix and assigns it to the object called my.matrix
+class(my.matrix)
+print(my.matrix)
+```
+
+With matrices and data frames, we usually want to define columns so that they describe a coherent _unit of analysis_. The unit could be a person, a county, or really anything that we might study in the social world---the idea is just that one row denotes one thing that we'd like to study.
+
+## Example 3. Reading in a CSV file
+
+A common way of storing data is as comma separated values. In such a file, each row of the file is a row of data, and we denote each column of interest by separating values with commas. 
+
+When reading in files, always start this section of code by setting your working directory with `setwd()`. Adding this one line of code makes it so you don't have to copy the entire directory every time you want to read in a file. This will be especially helpful when we start bringing in multiple files to merge and join together. To find your directory on a Windows machine, locate the file on your computer, right click, click "Properties" and copy the "Location." For a mac, right click the file, click "Get Info", and copy "Where".  
+
+Once you set your working directory, you can just type in the file name in the argument section of the `read.csv()` function anywhere in your R script. Make sure you place the argument in single quotes. Then when we call, or run, the function, R will use the path designated in `setwd()` to locate your .csv file from your computer's directory, it will then read in the file placed in the argument, and it will place that file into the object "data".  
+
+NOTE: For this class, `read.csv()` will be a primary we way we load data into R. We don't typically create our own data frames within R from scratch. Since we will be working with large datasets to deal with big policy issues, we will load some existing data to get a jump start on analysis.  
+
+```{r}
+#Creating a dataframe from a csv file
+data <- read.csv("./cty_covariates.csv") 
+class(data) #class is a function with the "argument" data. Class tells us data is a dataframe
+```
+
+If you every run into problems, use R help:
+
+```{r}
+help.search("csv") # search R help for the string "csv"
+help(read.csv) # look at the help file for the function read.csv()
+?read.csv #equivalent to above
+```
+
+<br>
+
+# Part C: Viewing our Data
+
+When bringining in data it is important to run common checks to make sure the dataset is ready for use. These include:  
+1. Making sure all of the variables are imported correctly, or as you would expect (e.g., every variable has the correct data associated with it).  
+2. Ensure your variables are stored as the correct "type". For instance, maybe income was stored as a string rather than an integer, which would make it impossible to run any summary statistics (e.g., mean, median, max/min) on the variable. We would need to change the variable back to an integer using our `as.numeric()` function. But you might get an error when you do this becuase maybe there is a value in your string like "not applicable" stored as one of the values. Then you would have to investigate and "clean" your variable before you could use it for analysis.  
+3. Examine your data for missing variables. Which variables have missing values? This will affect how you summarize the data later on.  
+4. Make sure your variables represent the proper values. For instance, if you have proportion female, you wouldn't want this to be coded 0 to 1.2. It should be coded 0 to 1, so what is going on?  
+
+## Example 1: Viewing our data
+
+We can view the entire dataset by clicking on "data" under Data in the Environments section of your R Studio interface. Notice when you click on a dataframe, it will appear in a new tab in your console. You can move back and forth between your R script and data. You can alternatively evaluate the first and last 6 observations using the `head()` and `tail()` functions, respectively, as shown below.  
+
+```{r}
+#Viewing our data
+#head(data) # head() shows the first 6 observations of our object "data"
+#tail(data) # tail() shows the last 6 observations of our object "data"
+```
+
+Scrolling through the data is the first step in ensuring our data was input correctly. You can click on each variable to sort your data. You can also look at the `head()` output to determine how each variable is stored. Think about:   
+* Are variables stored as int or char (see below for more on this).  
+* Do variable values seem to be correct? E.g., are proportions between 0 and 1?  
+* Do any of the values have missing data? This will influence arguments we use later.  
+
+
+## Example 2: Exploring variable length and types
+
+Above we brought in a dataset called `cty_covariates.csv`. Datasets are composed of rows of observations and columns of variables. Variables can take on 6 types described below. 
+
+- Character: `“hello”`
+- Numeric (real or decimal): `2`, `2.5`
+- Integer: `2` (whole numbers only)
+- Logical: `TRUE` or `FALSE`
+- Complex: `1+4i`
+
+But how do we use variables from a dataset? In order to use a variable, we have to call the dataset object, use a dollar sign, and then reference the variable you want: e.g., `datasetname$variable1`. This allows R to know where to look and what variable we want to use. 
+
+The `$` operator tells R to subset the data frame to a particular column by name, and then return it as a vector. This is important because we go from having a data frame to a vector (two different data structures).
+
+```{r}
+#Explore your data with the functions length(), which states the number of observations, 
+length(data$state)
+length(my.matrix)
+
+#Determine the number of unique values in a variable
+length(unique(data$state))
+```
+
+```{r}
+#Examining variables using typeof() which will again list the variable type
+typeof(data$state)
+typeof(data$hhinc_mean2000)
+```
+
+## Example 3: Changing variable type
+
+Sometimes a variable might not be stored in a useful format. In order for us to better use the variable, we might want to convert it to a character (string) or integer (number). We can do that by using "wrapper" functions that _coerce_ values from one type to another. They are easily identified by their `as.` prefix followed by the type we would coerce values to.
+
+```{r}
+#Change the variable type
+data$state2 <- as.character(data$state) # this creates a new variable state2, which is state stored as a character, and stores it in our dataset
+head(data) #this will now show you the dataset contains 36 instead of 35 columns, the last being our newest variable!
+```
+
+## Example 4: Cleaning our dataset
+
+By sorting mean household income 2000, we find a non-numeric character stored as one of the values. We can create a new variable called income2 and store it in our dataset by using the assignment operator, however, we will get an error which tells us that all of the values that contain characters are turned into NA. This would bias our results later on when we try to run summary statistics. 
+
+```{r}
+data$income2<-as.numeric(data$hhinc_mean2000)
+
+```
+
+To get around this, we could recode our variable by characters into numbers. For instance, we can recode the word twenty thousand to 20,000. With the `recode()` function. We can then re-assign this new variable to income2 using the `as.numeric()` wrapper and avoid inaccuracies in our data. 
+
+```{r}
+data$hhinc_mean2000v2 <- recode(data$hhinc_mean2000, "twenty thousand" = "20000") #recodes
+data$income2<-as.numeric(data$hhinc_mean2000v2) #over writes the previous variable
+
+```
+
+Sometimes variable names aren't intuitive, so we might want to make some changes. Here is an example of how to change variable names to make them easier to use. 
+
+```{r}
+#Change a variable name using the dplyr package, which we'll learn more about in Lab 2
+data <- data  %>% rename(commuting_zone = cz) # cz="commuting_zone" 
+```
+
+## Example 5: Merging data
+
+Sometimes a .csv file might contain only part of the data we're interested in analyzing. In this example, we have a variety of county-level demographic data, but we don't have any county-level outcomes. We can think about merging in another dataset that has this information using `merge()`. To do this, we will need to find another dataset that has a matching id variable, in this case county, and we will need to load this into our environment. When running `merge()` we place the two dataframes we want to connect together as the first two arguments. This function will combine both datasets using the county id variable. Any county ids that appear in one dataset but not the other will be dropped, unless we add `all=TRUE` to the argument.  
+
+```{r}
+#Read in the file you want to merge
+data2 <- read.csv('county_outcomes.csv') #read in your second file
+
+#Merge your two dataframes together
+cty_outcome_dems <- merge(data, data2, all=TRUE) 
+
+```
+
+## Example 6: Subsetting data
+
+Sometimes merging datasets will get to be too big for us to work with on our computer, so we can think about subsetting our data. Specifically, maybe we only want to keep variables that are in State 1. We can do this by subsetting our data using logical operators. Here is a list of operators:    
+
+- `<` means less than  
+- `>` means greater than  
+- `<=` means less than or equal to  
+- `>=` means greater than or equal to  
+- `==` means is equal to  
+- `!=` means not equal to  
+
+NOTE: `=` should only be used when assigning a value to a variable (this is interchangeable with `<-`). However, `==` evaluates whether two values are equal to each other (e.g., if we wanted to create an indicator equal to 1 when income is equal to 2000, we could do this by evaluating the following expression and placing it in the object `income2000` <- `income==2000`).  
+
+```{r}
+#Creating a smaller dataset
+cty_oucome_dems_1 <- subset(cty_outcome_dems, state==1)
+```
+
+<br>
+
+# Part D: Summary Statistics
+
+All of the checks in the viewing the data section are helpful in preparing the data before exploring the data by running simple statistics. This part of data analysis is crucial for many reasons, but two especially important ones are 1) it could uncover important data discrepancies we missed in step C and 2) it allows us to get a sense of relationships between our variables of interest.
+
+## Example 1. Taking the mean of a variable
+
+We want to know the average value of `hhinc_mean2000v2`, but we face a problem. 
+* `hhinc_mean2000v2` contains `NA` values, or missing values, which will prevent `mean()` from being able to compute the specified statistic.
+
+We can fix this by
+* Adding to the argument `na.rm = TRUE`, which tells R to remove all observations with `NA`
+
+You can replace `mean()` with `min()`, `max()`, `median()`, `mode()`, or whatever other mathematical operation you would like in order to explore your data!
+
+```{r}
+#Average of mean household income in 2000 for all counties
+meanhh <- mean(as.numeric(data$hhinc_mean2000v2), na.rm=TRUE) #we'll store the mean in a new variable/object called meanhh
+print(meanhh) #in order for us to see the mean, we will print our new variable name
+
+meanpoor <- mean(as.numeric(data$poor_share2000), na.rm=TRUE)
+print(meanpoor)
+```
+
+## Example 2. Creating new variabes
+
+Sometimes we might want to create new variables, so we can better examine our data. For instance, maybe we want to create an "indicator" or a variable that is equal to 1 if something is true, or 0 otherwise. R lets us do that using logical operators (as described above).    
+
+We can also use logical operators to compare two different vectors. In the example below, if the argument on the right hand side is true, i.e., if the value held in `hhinc_mean2000v2` is greater than the mean we calculated above in `meanhh`, then above_meanhh will turn into a 1, otherwise it will be coded as a 0.  
+
+```{r}
+#Creating new indicator variables
+data$above_meanhh <- (data$hhinc_mean2000v2>meanhh)
+data$above_meanpoor <- (data$poor_share2000>meanpoor)
+head(data) #always check your dataset to make sure your new variables were created and stored properly
+```
+
+## Example 3: Exploring relationships with our new variables
+
+We can create a table with our new variables that will tell us how many observations in our dataset meet a certain condition. 
+
+For the example below, we will find in the first row the number of observations that are below the county mean for household income and poor share (`FALSE`, `FALSE`) and the number below the county mean for household income but above for poor share (`FALSE`, `TRUE`). The second row will contain the number of observations that are above the county mean for household income but below for poor share (`TRUE`, `FALSE`) and the number above the county mean for household income and for poor share (`TRUE`, `TRUE`).
+
+```{r}
+#Creating a frequency table to explore our new variables
+table(data$above_meanhh, data$above_meanpoor)
+```
+
+## Example 4: Correlations
+
+A frequency table provides good intuition for the distribution of the data, but correlations will allow us to say whether the relationship between two variables is strong or weak and further whether that relationship is significant or not. 
+
+NOTE: a p-value <0.01 is considered strongly significant, <0.05 is considered moderately significant, and <0.1 is considered weakly significant).  
+
+```{r}
+#we can print all of the correlation test to console by not using assignment
+cor.test(data$income2, data$poor_share2000, method = "pearson")
+
+#Or we can save the correlation test output to an object for later use
+res <- cor.test(data$income2, data$poor_share2000, method = "pearson")
+res$estimate #displays the correlation coefficient
+res$p.value #dispalys the p-value, which tells us if the correlation coefficient is significant
+```
+
+
+
